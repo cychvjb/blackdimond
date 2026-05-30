@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>سامانه نوبت‌دهی آرایشگاه مردانه | مدیریت هوشمند</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0b0f1a 0%, #0a0e17 100%);
+            font-family: 'Segoe UI', 'Vazirmatn', system-ui, Tahoma, sans-serif;
+            padding: 1.5rem;
+            min-height: 100vh;
+            color: #eef2ff;
+        }
+
+        /* ظاهر کلی */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* کارت‌ها */
+        .card {
+            background: rgba(18, 25, 45, 0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(234, 179, 8, 0.25);
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eab308;
+            padding-bottom: 0.7rem;
+        }
+
+        .card-header h2 {
+            font-size: 1.8rem;
+            color: #eab308;
+            letter-spacing: -0.5px;
+        }
+
+        /* دکمه‌ها */
+        button, .btn-style {
+            background: #eab308;
+            border: none;
+            color: #0b0f1a;
+            font-weight: bold;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: #facc15;
+            transform: scale(0.97);
+            box-shadow: 0 5px 12px rgba(234,179,8,0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #eab308;
+            color: #eab308;
+        }
+
+        .btn-outline:hover {
+            background: #eab30820;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* فرم‌ها */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        input, select, textarea {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 1.2rem;
+            padding: 0.75rem 1rem;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #eab308;
+            box-shadow: 0 0 0 2px #eab30840;
+        }
+
+        /* نوبت‌ها و لیست */
+        .request-item, .appointment-item {
+            background: #0f172a;
+            border-radius: 1.5rem;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            border-right: 4px solid #eab308;
+        }
+
+        .info {
+            flex: 3;
+        }
+
+        .info p {
+            margin: 0.2rem 0;
+            font-size: 0.85rem;
+            color: #cbd5e6;
+        }
+
+        .badge {
+            background: #2d3a5e;
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .badge-pending { background: #b45309; color:#ffedd5; }
+        .badge-approved { background: #15803d; color:#dcfce7; }
+        .badge-rejected { background: #991b1b; color:#fee2e2; }
+
+        .action-group {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        /* مودال */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: #0f172ae6;
+            border-radius: 2rem;
+            padding: 1.8rem;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid #eab308;
+        }
+        .close-modal {
+            float: left;
+            font-size: 1.7rem;
+            cursor: pointer;
+            color: #eab308;
+        }
+
+        /* پیام‌ها */
+        .msg {
+            background: #1e293b;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .error {
+            background: #7f1d1d;
+            color: #fed7d7;
+        }
+        .success {
+            background: #14532d;
+            color: #bbf7d0;
+        }
+        hr {
+            border-color: #334155;
+            margin: 1rem 0;
+        }
+
+        /* tab-like */
+        .panel {
+            display: none;
+        }
+        .panel.active-panel {
+            display: block;
+        }
+        .switch-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+        .switch-btn {
+            background: transparent;
+            border: 1px solid #eab308;
+            color: #eab308;
+        }
+        .switch-btn.active-switch {
+            background: #eab308;
+            color: #0b0f1a;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .card { padding: 1rem; }
+            .request-item, .appointment-item { flex-direction: column; align-items: flex-start; }
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            margin-top: 2rem;
+            color: #5b6e8c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card" style="text-align: center; margin-bottom:1rem;">
+        <h1 style="color:#eab308;">💈 آرایشگاه مردانه <span style="color:#fff;">سامانه نوبت‌دهی هوشمند</span></h1>
+        <p>ثبت درخواست نوبت · پیگیری با کد · مدیریت توسط سالن</p>
+    </div>
+
+    <div class="switch-bar">
+        <button class="switch-btn active-switch" data-panel="customer-panel">📝 مشتری | ثبت نوبت</button>
+        <button class="switch-btn" data-panel="track-panel">🔍 پیگیری نوبت</button>
+        <button class="switch-btn" data-panel="admin-login-panel">🔐 پنل مدیریت</button>
+    </div>
+
+    <!-- پنل مشتری: ثبت درخواست -->
+    <div id="customer-panel" class="panel active-panel">
+        <div class="card">
+            <div class="card-header">
+                <h2>✂️ درخواست نوبت جدید</h2>
+                <span style="font-size:0.8rem;">* پس از ثبت، کد پیگیری دریافت می‌کنید</span>
+            </div>
+            <form id="requestForm">
+                <div class="form-grid">
+                    <div class="field"><label>نام و نام خانوادگی</label><input type="text" id="reqName" required></div>
+                    <div class="field"><label>شماره تماس</label><input type="tel" id="reqPhone" required></div>
+                    <div class="field"><label>خدمات مورد نظر</label>
+                        <select id="reqService">
+                            <option value="کوتاهی مدل (۳۰دقیقه)">کوتاهی مدل (۳۰دقیقه)</option>
+                            <option value="کوتاهی ساده (۲۰دقیقه)">کوتاهی ساده (۲۰دقیقه)</option>
+                            <option value="اصلاح صورت (۱۵دقیقه)">اصلاح صورت (۱۵دقیقه)</option>
+                            <option value="رنگ موی مردانه (۶۰دقیقه)">رنگ موی مردانه (۶۰دقیقه)</option>
+                            <option value="کاشت ریش (۴۵دقیقه)">کاشت ریش (۴۵دقیقه)</option>
+                            <option value="ماساژ سر (۲۰دقیقه)">ماساژ سر (۲۰دقیقه)</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>آرایشگر دلخواه</label>
+                        <select id="reqBarber">
+                            <option value="حسین صالحی">حسین صالحی</option>
+                            <option value="مجتبی بارانی">مجتبی بارانی</option>
+                            <option value="مهران سهرابی">مهران سهرابی</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>تاریخ پیشنهادی</label><input type="date" id="reqDate" required></div>
+                    <div class="field"><label>ساعت پیشنهادی</label><input type="time" id="reqTime" required></div>
+                </div>
+                <button type="submit" style="width:100%;">📌 ثبت درخواست و دریافت کد پیگیری</button>
+            </form>
+            <div id="requestMsg" class="msg"></div>
+        </div>
+    </div>
+
+    <!-- پنل پیگیری نوبت با کد -->
+    <div id="track-panel" class="panel">
+        <div class="card">
+            <div class="card-header"><h2>🔎 پیگیری وضعیت نوبت</h2></div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <input type="text" id="trackCode" placeholder="کد ۶ رقمی خود را وارد کنید" style="flex:2;">
+                <button id="trackBtn">بررسی وضعیت</button>
+            </div>
+            <div id="trackResult" class="msg"></div>
+        </div>
+    </div>
+
+    <!-- پنل مدیریت (قفل شده با رمز) -->
+    <div id="admin-login-panel" class="panel">
+        <div class="card">
+            <div class="card-header"><h2>👑 ورود به پنل مدیریت آرایشگاه</h2></div>
+            <div style="display:flex; gap:0.5rem;">
+                <input type="password" id="adminPass" placeholder="رمز مدیریت" style="flex:2;">
+                <button id="loginAdminBtn">ورود</button>
+            </div>
+            <div id="loginMsg" class="msg"></div>
+        </div>
+    </div>
+
+    <!-- بخش مدیریت پس از ورود (مخفی تا لاگین) -->
+    <div id="admin-dashboard" style="display:none;">
+        <div class="card">
+            <div class="card-header">
+                <h2>📋 درخواست‌های منتظر تایید</h2>
+                <button id="logoutAdmin" class="btn-outline">خروج از مدیریت</button>
+            </div>
+            <div id="pendingRequestsList">بارگذاری...</div>
+            
+            <hr>
+            <div class="card-header"><h2>✅ نوبت‌های تایید شده (فعال)</h2></div>
+            <div id="approvedList">بارگذاری...</div>
+        </div>
+    </div>
+</div>
+
+<footer>کد پیگیری خود را نزد خود نگه دارید. مدیریت پس از بررسی، نوبت شما را تایید یا رد می‌کند.</footer>
+
+<script>
+    // ---------- داده‌ها و استوریج ----------
+    const STORAGE_REQUESTS = "salon_requests";
+    // هر درخواست شامل: id, code, name, phone, service, requestedBarber, requestedDate, requestedTime, status, finalBarber, finalDate, finalTime, adminNote
+    let requests = [];
+
+    function loadRequests() {
+        const stored = localStorage.getItem(STORAGE_REQUESTS);
+        if(stored) {
+            requests = JSON.parse(stored);
+        } else {
+            // داده نمونه برای تست (اختیاری)
+            requests = [];
+            saveRequests();
+        }
+    }
+    function saveRequests() {
+        localStorage.setItem(STORAGE_REQUESTS, JSON.stringify(requests));
+    }
+
+    // تولید کد ۶ رقمی تصادفی
+    function generateCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    // ثبت درخواست جدید
+    function addRequest(data) {
+        const newCode = generateCode();
+        // بررسی عدم تداخل کد (تکرار کم پیش میاد ولی چک میکنیم)
+        while(requests.some(r => r.code === newCode)) newCode = generateCode();
+        const newReq = {
+            id: Date.now(),
+            code: newCode,
+            name: data.name,
+            phone: data.phone,
+            service: data.service,
+            requestedBarber: data.requestedBarber,
+            requestedDate: data.requestedDate,
+            requestedTime: data.requestedTime,
+            status: "pending",   // pending, approved, rejected
+            finalBarber: null,
+            finalDate: null,
+            finalTime: null,
+            adminNote: ""
+        };
+        requests.unshift(newReq);
+        saveRequests();
+        return newCode;
+    }
+
+    // نمایش پیام در پنل مشتری
+    function showMsg(element, text, isError = false) {
+        element.textContent = text;
+        element.className = isError ? "msg error" : "msg success";
+        setTimeout(() => {
+            if(element) { element.textContent = ""; element.className = "msg"; }
+        }, 5000);
+    }
+
+    // ------ پنل مشتری: ثبت درخواست ------
+    const reqForm = document.getElementById("requestForm");
+    const reqMsgDiv = document.getElementById("requestMsg");
+    reqForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById("reqName").value.trim();
+        const phone = document.getElementById("reqPhone").value.trim();
+        const service = document.getElementById("reqService").value;
+        const requestedBarber = document.getElementById("reqBarber").value;
+        const requestedDate = document.getElementById("reqDate").value;
+        const requestedTime = document.getElementById("reqTime").value;
+        if(!name || !phone || !requestedDate || !requestedTime) {
+            showMsg(reqMsgDiv, "لطفاً تمام فیلدها را پر کنید", true);
+            return;
+        }
+        const code = addRequest({name, phone, service, requestedBarber, requestedDate, requestedTime});
+        showMsg(reqMsgDiv, `✅ درخواست شما ثبت شد. کد پیگیری: ${code} (این کد را ذخیره کنید)`, false);
+        reqForm.reset();
+        // تنظیم تاریخ امروز پیشفرض برای راحتی
+        document.getElementById("reqDate").value = new Date().toISOString().slice(0,10);
+    });
+
+    // تاریخ پیشفرض امروز برای فیلد تاریخ
+    document.getElementById("reqDate").value = new Date().toISOString().slice(0,10);
+
+    // ------- پیگیری با کد ----------
+    const trackBtn = document.getElementById("trackBtn");
+    const trackResult = document.getElementById("trackResult");
+    trackBtn.addEventListener("click", () => {
+        const code = document.getElementById("trackCode").value.trim();
+        if(!code) { showMsg(trackResult, "کد پیگیری را وارد کنید", true); return; }
+        const req = requests.find(r => r.code === code);
+        if(!req) { showMsg(trackResult, "کد معتبر نیست. لطفاً دوباره بررسی کنید.", true); return; }
+        let statusText = "";
+        if(req.status === "pending") statusText = "⏳ در انتظار تایید مدیریت";
+        else if(req.status === "rejected") statusText = "❌ درخواست شما رد شده است. لطفاً با سالن تماس بگیرید.";
+        else if(req.status === "approved") {
+            statusText = `✅ تایید شده! نوبت شما: ${req.finalDate} - ساعت ${req.finalTime} - آرایشگر: ${req.finalBarber}`;
+        }
+        trackResult.innerHTML = `
+            <strong>وضعیت:</strong> ${statusText}<br>
+            <strong>نام:</strong> ${req.name}<br>
+            <strong>خدمت:</strong> ${req.service}<br>
+            <strong>درخواست اولیه:</strong> ${req.requestedDate} ${req.requestedTime} (آرایشگر ${req.requestedBarber})
+        `;
+        trackResult.className = "msg success";
+    });
+
+    // ---------- مدیریت (ورود رمز) ----------
+    const ADMIN_PASSWORD = "salon1403"; // رمز پیشفرض، قابل تغییر توسط ادمین در کد
+    let adminLoggedIn = false;
+    const adminDashboard = document.getElementById("admin-dashboard");
+    const loginPanel = document.getElementById("admin-login-panel");
+    const loginAdminBtn = document.getElementById("loginAdminBtn");
+    const adminPassInput = document.getElementById("adminPass");
+    const loginMsg = document.getElementById("loginMsg");
+
+    function renderAdminPanels() {
+        if(!adminLoggedIn) return;
+        // نمایش درخواست‌های pending
+        const pending = requests.filter(r => r.status === "pending");
+        const pendingDiv = document.getElementById("pendingRequestsList");
+        if(pending.length === 0) pendingDiv.innerHTML = "<div class='msg'>هیچ درخواست جدیدی وجود ندارد.</div>";
+        else {
+            let html = "";
+            pending.forEach(req => {
+                html += `
+                    <div class="request-item" data-id="${req.id}">
+                        <div class="info">
+                            <strong>${req.name}</strong> | 📞 ${req.phone}<br>
+                            🧾 ${req.service} | 💇 آرایشگر دلخواه: ${req.requestedBarber}<br>
+                            📅 پیشنهادی: ${req.requestedDate} ساعت ${req.requestedTime}<br>
+                            <span class="badge badge-pending">در انتظار تایید</span> | کد: ${req.code}
+                        </div>
+                        <div class="action-group">
+                            <button class="approve-btn" data-id="${req.id}">✅ تایید و تعیین نوبت</button>
+                            <button class="reject-btn" data-id="${req.id}">❌ رد درخواست</button>
+                        </div>
+                    </div>
+                `;
+            });
+            pendingDiv.innerHTML = html;
+            // attach events
+            document.querySelectorAll(".approve-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const id = parseInt(btn.getAttribute("data-id"));
+                    openApproveModal(id);
+                });
+            });
+            document.querySelectorAll(".reject-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const id = parseInt(btn.getAttribute("data-id"));
+                    if(confirm("آیا از رد کردن این درخواست مطمئنید؟")) {
+                        const reqIndex = requests.findIndex(r => r.id === id);
+                        if(reqIndex !== -1) {
+                            requests[reqIndex].status = "rejected";
+                            saveRequests();
+                            renderAdminPanels();
+                            renderApprovedList();
+                        }
+                    }
+                });
+            });
+        }
+        renderApprovedList();
+    }
+
+    function renderApprovedList() {
+        const approved = requests.filter(r => r.status === "approved");
+        const approvedDiv = document.getElementById("approvedList");
+        if(approved.length === 0) approvedDiv.innerHTML = "<div class='msg'>هیچ نوبت تایید شده‌ای وجود ندارد.</div>";
+        else {
+            let html = "";
+            approved.forEach(app => {
+                html += `
+                    <div class="appointment-item" data-id="${app.id}">
+                        <div class="info">
+                            <strong>${app.name}</strong> | ${app.phone}<br>
+                            🕒 نوبت نهایی: ${app.finalDate} - ${app.finalTime} | آرایشگر: ${app.finalBarber}<br>
+                            خدمت: ${app.service} | کد: ${app.code}
+                        </div>
+                        <button class="cancel-app-btn btn-danger" data-id="${app.id}">🗑️ لغو نوبت</button>
+                    </div>
+                `;
+            });
+            approvedDiv.innerHTML = html;
+            document.querySelectorAll(".cancel-app-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const id = parseInt(btn.getAttribute("data-id"));
+                    if(confirm("نوبت تایید شده لغو شود؟ مشتری دیگر نمی‌تواند از آن استفاده کند.")) {
+                        const idx = requests.findIndex(r => r.id === id);
+                        if(idx !== -1) {
+                            requests[idx].status = "rejected";
+                            saveRequests();
+                            renderAdminPanels();
+                        }
+                    }
+                });
+            });
+        }
+    }
+
+    // مودال تایید درخواست (تعیین جزئیات نهایی)
+    let currentApproveId = null;
+    function openApproveModal(reqId) {
+        const req = requests.find(r => r.id === reqId);
+        if(!req) return;
+        currentApproveId = reqId;
+        // ساخت مودال
+        let modal = document.getElementById("approveModal");
+        if(modal) modal.remove();
+        modal = document.createElement("div");
+        modal.id = "approveModal";
+        modal.className = "modal";
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3 style="color:#eab308;">تایید و تعیین نوبت نهایی</h3>
+                <p>مشتری: ${req.name} - کد ${req.code}</p>
+                <div class="field"><label>آرایشگر نهایی</label>
+                    <select id="finalBarberSelect">
+                        <option value="حسین صالحی" ${req.requestedBarber === "حسین صالحی" ? "selected" : ""}>حسین صالحی</option>
+                        <option value="مجتبی بارانی" ${req.requestedBarber === "مجتبی بارانی" ? "selected" : ""}>مجتبی بارانی</option>
+                        <option value="مهران سهرابی" ${req.requestedBarber === "مهران سهرابی" ? "selected" : ""}>مهران سهرابی</option>
+                    </select>
+                </div>
+                <div class="field"><label>تاریخ نهایی نوبت</label><input type="date" id="finalDate" value="${req.requestedDate}"></div>
+                <div class="field"><label>ساعت نهایی نوبت</label><input type="time" id="finalTime" value="${req.requestedTime}"></div>
+                <button id="confirmApproveBtn" style="margin-top:1rem; width:100%;">تایید و ذخیره نوبت</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.add("active");
+        modal.querySelector(".close-modal").addEventListener("click", () => modal.remove());
+        modal.querySelector("#confirmApproveBtn").addEventListener("click", () => {
+            const finalBarber = modal.querySelector("#finalBarberSelect").value;
+            const finalDate = modal.querySelector("#finalDate").value;
+            const finalTime = modal.querySelector("#finalTime").value;
+            if(!finalDate || !finalTime) {
+                alert("لطفاً تاریخ و ساعت نهایی را مشخص کنید");
+                return;
+            }
+            const index = requests.findIndex(r => r.id === currentApproveId);
+            if(index !== -1) {
+                requests[index].status = "approved";
+                requests[index].finalBarber = finalBarber;
+                requests[index].finalDate = finalDate;
+                requests[index].finalTime = finalTime;
+                saveRequests();
+                renderAdminPanels();
+            }
+            modal.remove();
+        });
+    }
+
+    loginAdminBtn.addEventListener("click", () => {
+        const pass = adminPassInput.value;
+        if(pass === ADMIN_PASSWORD) {
+            adminLoggedIn = true;
+            loginPanel.style.display = "none";
+            adminDashboard.style.display = "block";
+            renderAdminPanels();
+            // مخفی کردن تب مدیریت لاگین و نمایش داشبورد
+            document.querySelectorAll(".switch-btn").forEach(btn => btn.classList.remove("active-switch"));
+            // برای زیبایی، میتونیم مدیریت رو active کنیم
+        } else {
+            showMsg(loginMsg, "رمز مدیریت نادرست است", true);
+        }
+    });
+
+    document.getElementById("logoutAdmin").addEventListener("click", () => {
+        adminLoggedIn = false;
+        adminDashboard.style.display = "none";
+        loginPanel.style.display = "block";
+        adminPassInput.value = "";
+        document.querySelector(".switch-btn[data-panel='admin-login-panel']").click();
+    });
+
+    // ------ سوییچ بین پنل‌ها ------
+    const panels = {
+        "customer-panel": document.getElementById("customer-panel"),
+        "track-panel": document.getElementById("track-panel"),
+        "admin-login-panel": document.getElementById("admin-login-panel")
+    };
+    document.querySelectorAll(".switch-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-panel");
+            for(let p in panels) panels[p].classList.remove("active-panel");
+            panels[target].classList.add("active-panel");
+            document.querySelectorAll(".switch-btn").forEach(b => b.classList.remove("active-switch"));
+            btn.classList.add("active-switch");
+            // اگر وارد لاگین هستیم و قبلاً لاگین کرده بودیم، داشبورد را مخفی نکنید ولی پنل لاگین نمایش داده شده است
+            if(target === "admin-login-panel" && adminLoggedIn) {
+                // اگر قبلاً لاگین کرده و دوباره تب مدیریت رو زد، به جای لاگین، داشبورد رو نشون بده
+                loginPanel.style.display = "none";
+                adminDashboard.style.display = "block";
+            } else if(target !== "admin-login-panel") {
+                if(adminDashboard) adminDashboard.style.display = "none";
+                if(loginPanel) loginPanel.style.display = "block";
+            }
+        });
+    });
+
+    // بار اولیه داده
+    loadRequests();
+    // اگر لاگین قبلاً نبوده، dashboard مخفی است
+    // اطمینان از وضعیت اولیه
+    adminDashboard.style.display = "none";
+    // تنظیم تاریخ پیشفرض برای فرم درخواست
+    if(!document.getElementById("reqDate").value) document.getElementById("reqDate").value = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
