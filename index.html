@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه نوبت‌دهی آرایشگاه</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(145deg, #0b0f1a 0%, #0a0e17 100%);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 1rem;
+            min-height: 100vh;
+            color: #eef2ff;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: rgba(18, 25, 45, 0.9);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #eab308;
+            padding-bottom: 0.5rem;
+        }
+        .card-header h2 { color: #eab308; font-size: 1.5rem; }
+        button {
+            background: #eab308;
+            border: none;
+            color: #0b0f1a;
+            font-weight: bold;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button:hover { background: #facc15; transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 1px solid #eab308; color: #eab308; }
+        .btn-danger { background: #dc2626; color: white; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .field { display: flex; flex-direction: column; gap: 0.3rem; }
+        label { font-size: 0.8rem; color: #cbd5e1; }
+        input, select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 0.6rem 1rem;
+            color: #fff;
+        }
+        input:focus, select:focus { outline: none; border-color: #eab308; }
+        .request-item, .appointment-item {
+            background: #0f172a;
+            border-radius: 1rem;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            border-right: 3px solid #eab308;
+        }
+        .badge-pending { background: #b45309; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
+        .badge-approved { background: #15803d; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
+        .msg { background: #1e293b; padding: 0.6rem; border-radius: 1rem; margin: 0.5rem 0; text-align: center; font-size: 0.85rem; }
+        .error { background: #7f1d1d; color: #fed7d7; }
+        .success { background: #14532d; color: #bbf7d0; }
+        .loading { background: #854d0e; color: #fef08a; }
+        .panel { display: none; }
+        .panel.active-panel { display: block; }
+        .switch-bar {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .switch-btn {
+            background: transparent;
+            border: 1px solid #eab308;
+            color: #eab308;
+        }
+        .switch-btn.active-switch { background: #eab308; color: #0b0f1a; }
+        hr { border-color: #334155; margin: 1rem 0; }
+        @media (max-width: 700px) {
+            body { padding: 0.8rem; }
+            .card { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card" style="text-align: center;">
+        <h1 style="color:#eab308;">💈 آرایشگاه مردانه</h1>
+        <p>⚡ سامانه نوبت‌دهی آنلاین | همگام‌سازی لحظه‌ای</p>
+        <div id="serverStatus" class="msg" style="display:inline-block; padding:0.3rem 1rem; margin-top:0.5rem;">در حال اتصال...</div>
+    </div>
+
+    <div class="switch-bar">
+        <button class="switch-btn active-switch" data-panel="customer">📝 ثبت نوبت</button>
+        <button class="switch-btn" data-panel="track">🔍 پیگیری</button>
+        <button class="switch-btn" data-panel="admin">🔐 مدیریت</button>
+    </div>
+
+    <div id="customer-panel" class="panel active-panel">
+        <div class="card">
+            <div class="card-header"><h2>✂️ درخواست نوبت جدید</h2></div>
+            <form id="requestForm">
+                <div class="form-grid">
+                    <div class="field"><label>نام و نام خانوادگی</label><input type="text" id="reqName" required></div>
+                    <div class="field"><label>شماره تماس</label><input type="tel" id="reqPhone" required></div>
+                    <div class="field"><label>خدمات</label>
+                        <select id="reqService">
+                            <option>کوتاهی مدل (۳۰دقیقه) - ۱۵۰ هزار</option>
+                            <option>اصلاح صورت (۱۵دقیقه) - ۸۰ هزار</option>
+                            <option>رنگ مو (۶۰دقیقه) - ۳۵۰ هزار</option>
+                            <option>کاشت ریش (۴۵دقیقه) - ۲۵۰ هزار</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>آرایشگر</label>
+                        <select id="reqBarber">
+                            <option>حسین صالحی</option>
+                            <option>مجتبی بارانی</option>
+                            <option>مهران سهرابی</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>تاریخ</label><input type="date" id="reqDate" required></div>
+                    <div class="field"><label>ساعت</label><input type="time" id="reqTime" required></div>
+                </div>
+                <button type="submit" style="width:100%; margin-top:0.5rem;">📌 ثبت درخواست</button>
+            </form>
+            <div id="requestMsg" class="msg"></div>
+        </div>
+    </div>
+
+    <div id="track-panel" class="panel">
+        <div class="card">
+            <div class="card-header"><h2>🔎 پیگیری نوبت</h2></div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <input type="text" id="trackCode" placeholder="کد ۶ رقمی" style="flex:2;">
+                <button id="trackBtn">بررسی</button>
+            </div>
+            <div id="trackResult" class="msg"></div>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="panel">
+        <div class="card">
+            <div class="card-header">
+                <h2>👑 پنل مدیریت</h2>
+                <div><input type="password" id="adminPass" placeholder="رمز" style="width:120px;"><button id="loginBtn" style="margin-right:0.5rem;">ورود</button></div>
+            </div>
+            <div id="adminContent" style="display:none;">
+                <div id="statsDiv" style="background:#1e293b; padding:0.5rem; border-radius:1rem; margin-bottom:1rem; text-align:center;"></div>
+                <div id="pendingList"></div>
+                <hr>
+                <div id="approvedList"></div>
+                <button id="logoutBtn" class="btn-outline" style="margin-top:1rem;">🚪 خروج</button>
+                <button id="refreshBtn" class="btn-outline" style="margin-top:1rem; margin-right:0.5rem;">🔄 تازه‌سازی</button>
+            </div>
+            <div id="loginMsg" class="msg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🔴 مهم: این آدرس رو بعد از راه‌اندازی Render تغییر بده 🔴
+    const API_URL = 'https://YOUR-APP-NAME.onrender.com/api.php';
+    let adminLoggedIn = false;
+    let refreshInterval = null;
+    const ADMIN_PASS = "1403";
+    
+    async function testServerConnection() {
+        const statusDiv = document.getElementById("serverStatus");
+        try {
+            const response = await fetch(`${API_URL}?action=pending`);
+            if(response.ok) {
+                statusDiv.innerHTML = "✅ متصل به سرور";
+                statusDiv.className = "msg success";
+                return true;
+            } else {
+                throw new Error("خطا");
+            }
+        } catch(err) {
+            statusDiv.innerHTML = "❌ قطع ارتباط با سرور";
+            statusDiv.className = "msg error";
+            return false;
+        }
+    }
+    
+    function showMsg(element, text, isError = false) {
+        element.textContent = text;
+        element.className = isError ? "msg error" : "msg success";
+        setTimeout(() => {
+            if(element && element.textContent === text) {
+                element.textContent = "";
+                element.className = "msg";
+            }
+        }, 5000);
+    }
+    
+    async function addRequest(data) {
+        const response = await fetch(`${API_URL}?action=add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if(!result.success) throw new Error(result.error || "خطا در ثبت");
+        return result.code;
+    }
+    
+    const reqForm = document.getElementById("requestForm");
+    const reqMsg = document.getElementById("requestMsg");
+    
+    reqForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("reqName").value.trim();
+        const phone = document.getElementById("reqPhone").value.trim();
+        const service = document.getElementById("reqService").value;
+        const barber = document.getElementById("reqBarber").value;
+        const date = document.getElementById("reqDate").value;
+        const time = document.getElementById("reqTime").value;
+        
+        if(!name || !phone || !date || !time) {
+            showMsg(reqMsg, "لطفاً همه فیلدها را پر کنید", true);
+            return;
+        }
+        
+        const btn = reqForm.querySelector("button");
+        const originalText = btn.textContent;
+        btn.textContent = "⏳ در حال ثبت...";
+        btn.disabled = true;
+        
+        try {
+            const code = await addRequest({name, phone, service, requestedBarber: barber, requestedDate: date, requestedTime: time});
+            alert(`✅ نوبت شما ثبت شد!\n📋 کد پیگیری: ${code}`);
+            showMsg(reqMsg, `✅ ثبت شد! کد پیگیری: ${code}`, false);
+            reqForm.reset();
+            document.getElementById("reqDate").value = new Date().toISOString().slice(0,10);
+        } catch(err) {
+            showMsg(reqMsg, "❌ خطا: " + err.message, true);
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    });
+    
+    document.getElementById("reqDate").value = new Date().toISOString().slice(0,10);
+    
+    const trackBtn = document.getElementById("trackBtn");
+    const trackResult = document.getElementById("trackResult");
+    
+    trackBtn.addEventListener("click", async () => {
+        const code = document.getElementById("trackCode").value.trim();
+        if(!code) {
+            showMsg(trackResult, "لطفاً کد را وارد کنید", true);
+            return;
+        }
+        
+        trackResult.textContent = "⏳ در حال جستجو...";
+        trackResult.className = "msg loading";
+        
+        try {
+            const response = await fetch(`${API_URL}?action=track&code=${code}`);
+            const req = await response.json();
+            
+            if(req.error) {
+                showMsg(trackResult, req.error, true);
+                return;
+            }
+            
+            let statusHtml = "";
+            if(req.status === "pending") {
+                statusHtml = '<span class="badge-pending">⏳ در انتظار تایید</span>';
+            } else if(req.status === "rejected") {
+                statusHtml = '<span style="background:#991b1b; padding:0.2rem 0.6rem; border-radius:1rem;">❌ رد شده</span>';
+            } else {
+                statusHtml = `<span class="badge-approved">✅ تایید شده - ${req.finalDate} ساعت ${req.finalTime} - آرایشگر: ${req.finalBarber}</span>`;
+            }
+            
+            trackResult.innerHTML = `
+                <div><strong>وضعیت:</strong> ${statusHtml}</div>
+                <div><strong>نام:</strong> ${req.name}</div>
+                <div><strong>خدمت:</strong> ${req.service}</div>
+                <div><strong>درخواست:</strong> ${req.requestedDate} ${req.requestedTime} - ${req.requestedBarber}</div>
+            `;
+            trackResult.className = "msg success";
+        } catch(err) {
+            showMsg(trackResult, "خطا در ارتباط با سرور", true);
+        }
+    });
+    
+    async function loadPending() {
+        const response = await fetch(`${API_URL}?action=pending`);
+        return await response.json();
+    }
+    
+    async function loadApproved() {
+        const response = await fetch(`${API_URL}?action=approved`);
+        return await response.json();
+    }
+    
+    async function approveRequest(id, finalBarber, finalDate, finalTime) {
+        const response = await fetch(`${API_URL}?action=approve`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({id, finalBarber, finalDate, finalTime})
+        });
+        return await response.json();
+    }
+    
+    async function rejectRequest(id) {
+        const response = await fetch(`${API_URL}?action=reject`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({id})
+        });
+        return await response.json();
+    }
+    
+    async function renderAdminPanel() {
+        if(!adminLoggedIn) return;
+        
+        try {
+            const pending = await loadPending();
+            const approved = await loadApproved();
+            
+            const statsDiv = document.getElementById("statsDiv");
+            statsDiv.innerHTML = `📊 در انتظار: ${pending.length} | ✅ تایید شده: ${approved.length}`;
+            
+            const pendingDiv = document.getElementById("pendingList");
+            if(pending.length === 0) {
+                pendingDiv.innerHTML = "<div class='msg'>✨ هیچ درخواست جدیدی نیست</div>";
+            } else {
+                pendingDiv.innerHTML = `<h3 style="color:#eab308; margin-bottom:0.5rem;">⏳ درخواست‌های جدید (${pending.length})</h3>` + 
+                    pending.map(req => `
+                        <div class="request-item">
+                            <div>
+                                <strong>${escapeHtml(req.name)}</strong> | 📞 ${req.phone}<br>
+                                🧾 ${escapeHtml(req.service)}<br>
+                                💇 آرایشگر: ${req.requestedBarber}<br>
+                                📅 ${req.requestedDate} - ${req.requestedTime}<br>
+                                <span class="badge-pending">کد: ${req.code}</span>
+                            </div>
+                            <div style="margin-top:0.5rem;">
+                                <button onclick="openApproveModal(${req.id})" style="background:#15803d;">✅ تایید</button>
+                                <button onclick="handleReject(${req.id})" style="background:#991b1b;">❌ رد</button>
+                            </div>
+                        </div>
+                    `).join('');
+            }
+            
+            const approvedDiv = document.getElementById("approvedList");
+            if(approved.length === 0) {
+                approvedDiv.innerHTML = "<div class='msg'>📭 هیچ نوبت تایید شده‌ای نیست</div>";
+            } else {
+                approvedDiv.innerHTML = `<h3 style="color:#eab308; margin-bottom:0.5rem;">✅ نوبت‌های تایید شده (${approved.length})</h3>` +
+                    approved.map(req => `
+                        <div class="appointment-item">
+                            <div>
+                                <strong>${escapeHtml(req.name)}</strong> | 📞 ${req.phone}<br>
+                                🕒 نوبت: ${req.finalDate} - ${req.finalTime}<br>
+                                💇 آرایشگر: ${req.finalBarber}<br>
+                                🧾 ${escapeHtml(req.service)}
+                            </div>
+                            <button onclick="handleCancel(${req.id})" class="btn-danger" style="margin-top:0.5rem;">🗑️ لغو نوبت</button>
+                        </div>
+                    `).join('');
+            }
+        } catch(err) {
+            console.error(err);
+            document.getElementById("pendingList").innerHTML = "<div class='msg error'>خطا در بارگذاری</div>";
+        }
+    }
+    
+    window.openApproveModal = (id) => {
+        const finalDate = prompt("تاریخ نهایی نوبت (مثال: 1402/12/20):");
+        if(!finalDate) return;
+        const finalTime = prompt("ساعت نهایی (مثال: 16:30):");
+        if(!finalTime) return;
+        const finalBarber = prompt("آرایشگر نهایی:");
+        if(!finalBarber) return;
+        
+        approveRequest(id, finalBarber, finalDate, finalTime).then(() => {
+            renderAdminPanel();
+            alert("✅ نوبت تایید شد!");
+        }).catch(err => {
+            alert("خطا در تایید: " + err.message);
+        });
+    };
+    
+    window.handleReject = async (id) => {
+        if(confirm("آیا از رد این درخواست مطمئنید؟")) {
+            await rejectRequest(id);
+            renderAdminPanel();
+        }
+    };
+    
+    window.handleCancel = async (id) => {
+        if(confirm("لغو نوبت؟")) {
+            await rejectRequest(id);
+            renderAdminPanel();
+        }
+    };
+    
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    document.getElementById("loginBtn").addEventListener("click", () => {
+        const pass = document.getElementById("adminPass").value;
+        if(pass === ADMIN_PASS) {
+            adminLoggedIn = true;
+            document.getElementById("adminContent").style.display = "block";
+            document.getElementById("loginMsg").innerHTML = "";
+            renderAdminPanel();
+            if(refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if(adminLoggedIn) renderAdminPanel();
+            }, 5000);
+        } else {
+            showMsg(document.getElementById("loginMsg"), "رمز مدیریت نادرست است", true);
+        }
+    });
+    
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+        adminLoggedIn = false;
+        document.getElementById("adminContent").style.display = "none";
+        document.getElementById("adminPass").value = "";
+        if(refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+    });
+    
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+        if(adminLoggedIn) renderAdminPanel();
+    });
+    
+    const panels = {
+        customer: document.getElementById("customer-panel"),
+        track: document.getElementById("track-panel"),
+        admin: document.getElementById("admin-panel")
+    };
+    
+    document.querySelectorAll(".switch-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-panel");
+            Object.values(panels).forEach(p => p.classList.remove("active-panel"));
+            panels[target].classList.add("active-panel");
+            document.querySelectorAll(".switch-btn").forEach(b => b.classList.remove("active-switch"));
+            btn.classList.add("active-switch");
+        });
+    });
+    
+    testServerConnection();
+    setInterval(testServerConnection, 30000);
+</script>
+</body>
+</html>
